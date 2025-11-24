@@ -1,0 +1,16 @@
+[package]
+name = "mineboard"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-files = "0.6.8"
+actix-rt = "2.11.0"
+actix-web = "4.12.0"
+dotenvy = "0.15.7"
+env_logger = "0.11.8"
+log = "0.4.28"
+rcon-client = "0.1.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+ws = "0.9.2"
