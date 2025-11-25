@@ -4,6 +4,7 @@ use actix::Actor;
 use actix_files::Files;
 use actix_web::{App, HttpServer, web};
 use dotenvy::dotenv;
+use tokio::{process::ChildStdin, sync::Mutex as TokioMutex};
 
 use crate::broadcaster::Broadcaster;
 
@@ -23,6 +24,7 @@ pub struct Config {
 #[derive(Debug)]
 pub struct AppState {
     pub server_pid: Mutex<Option<u32>>,
+    pub server_stdin: TokioMutex<Option<ChildStdin>>,
     pub broadcaster: actix::Addr<Broadcaster>,
     pub config: Config,
 }
@@ -53,6 +55,7 @@ async fn main() -> std::io::Result<()> {
 
     let app_state = web::Data::new(AppState {
         server_pid: Mutex::new(None),
+        server_stdin: TokioMutex::new(None),
         broadcaster: broadcaster_addr,
         config,
     });
@@ -65,7 +68,8 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .route("/start", web::post().to(server::start_server))
-                    .route("/stop", web::post().to(server::stop_server)),
+                    .route("/stop", web::post().to(server::stop_server))
+                    .route("/command", web::post().to(server::send_command)),
             )
             .service(web::scope("/ws").route("/logs", web::get().to(websocket::ws_route)))
             .service(Files::new("/", front_build_dir.clone()).index_file("index.html"))
