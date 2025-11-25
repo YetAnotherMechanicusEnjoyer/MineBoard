@@ -82,6 +82,63 @@ pub async fn start_server(app_state: web::Data<AppState>) -> HttpResponse {
     }
 }
 
-pub async fn stop_server() -> HttpResponse {
-    HttpResponse::Ok().body("(not implemented yet)")
+pub async fn stop_server(app_state: web::Data<AppState>) -> HttpResponse {
+    let pid_option = {
+        let mut server_pid = app_state.server_pid.lock().unwrap();
+        server_pid.take()
+    };
+
+    match pid_option {
+        Some(pid) => {
+            let kill_command = format!("kill -9 {pid}");
+
+            match Command::new("/bin/sh")
+                .arg("-c")
+                .arg(&kill_command)
+                .output()
+                .await
+            {
+                Ok(output) => {
+                    if output.status.success() {
+                        let msg = format!("Server stopped successfully. (PID: {pid})");
+                        println!("{msg}");
+
+                        app_state.broadcaster.do_send(BroadcastLog {
+                            message: format!("[INFO]: {msg}"),
+                            is_error: false,
+                        });
+                        HttpResponse::Ok().body(msg)
+                    } else {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        let msg = format!("Failed to stop server (PID: {pid}. Error: {stderr}");
+                        eprintln!("{msg}");
+
+                        app_state.broadcaster.do_send(BroadcastLog {
+                            message: format!("[ERR]: {msg}"),
+                            is_error: true,
+                        });
+
+                        *app_state.server_pid.lock().unwrap() = Some(pid);
+                        HttpResponse::InternalServerError().body(msg)
+                    }
+                }
+                Err(e) => {
+                    let msg = format!("Failed to execute kill command: {e}");
+                    eprintln!("{msg}");
+
+                    app_state.broadcaster.do_send(BroadcastLog {
+                        message: format!("[ERR]: {msg}"),
+                        is_error: true,
+                    });
+
+                    *app_state.server_pid.lock().unwrap() = Some(pid);
+                    HttpResponse::InternalServerError().body(msg)
+                }
+            }
+        }
+        None => {
+            println!("Server is already stopped or was never started.");
+            HttpResponse::Ok().body("Server is already stopped or was never started.")
+        }
+    }
 }
