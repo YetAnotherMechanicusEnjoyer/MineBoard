@@ -1,0 +1,13 @@
+services:
+  mineboard:
+    build: .
+    environment:
+      - "FRONT_BUILD_DIR=/app/front/dist/"
+      - "COMMAND=java"
+      - "ARGS=-jar server.jar nogui"
+      - "SERVER_PATH=/app/server/"
+    ports:
+      - "8080:8080"
+      - "25565:25565"
+      - "24454:24454"
+    restart: on-failure
