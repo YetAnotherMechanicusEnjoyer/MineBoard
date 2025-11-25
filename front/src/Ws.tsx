@@ -10,7 +10,7 @@ const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${wind
 const API_URL = `http://${window.location.host}/api`;
 
 const Test: React.FC = () => {
-  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnecting' | 'disconnected'>('disconnected');
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -37,7 +37,7 @@ const Test: React.FC = () => {
     }
 
     setLogs([]);
-    addLogEntry("Trying to connect to WebSocket...");
+    addLogEntry("Connecting to WebSocket...");
     setWsStatus('connecting');
 
     const ws = new WebSocket(WS_URL);
@@ -60,6 +60,9 @@ const Test: React.FC = () => {
   }, [addLogEntry]);
 
   const disconnectWebSocket = useCallback(() => {
+    setWsStatus('disconnecting');
+    addLogEntry("Disconnecting from WebSocket...");
+
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.close(1000, "Manual Disconnection.");
     }
@@ -100,7 +103,7 @@ const Test: React.FC = () => {
   }, [addLogEntry]);
 
   const statusColor = wsStatus === 'connected' ? 'bg-green-100 text-green-800' :
-    wsStatus === 'connecting' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
+    wsStatus === 'connecting' || 'disconnecting' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
 
   return (
     <>
