@@ -66,19 +66,36 @@ const Test: React.FC = () => {
   }, []);
 
   const startServer = useCallback(async () => {
-    addLogEntry("Envoi de la commande de démarrage /api/start...");
+    addLogEntry("Sending starting command /api/start...");
 
     try {
       const response = await fetch(`${API_URL}/start`, { method: 'POST' });
       const body = await response.text();
 
       if (response.ok) {
-        addLogEntry(`API OK: ${body}`);
+        addLogEntry(`[OK] Api body: ${body}`);
       } else {
-        addLogEntry(`API Error: ${body}`);
+        addLogEntry(`[ERR] Api Error: ${body}`);
       }
     } catch (error) {
-      addLogEntry("Error: Cannot fetch API");
+      addLogEntry("[ERR]: Cannot fetch API");
+    }
+  }, [addLogEntry]);
+
+  const stopServer = useCallback(async () => {
+    addLogEntry("Sending stopping command /api/stop...");
+
+    try {
+      const response = await fetch(`${API_URL}/stop`, { method: 'POST' });
+      const body = await response.text();
+
+      if (response.ok) {
+        addLogEntry(`[OK] Api body: ${body}`);
+      } else {
+        addLogEntry(`[ERR] Api Error: ${body}`);
+      }
+    } catch (error) {
+      addLogEntry("[ERR]: Cannot fetch Api");
     }
   }, [addLogEntry]);
 
@@ -121,6 +138,16 @@ const Test: React.FC = () => {
               disabled={wsStatus !== 'connected'}
             >
               Start Server
+            </button>
+          </Col>
+
+          <Col>
+            <button
+              className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded disabled:opacity-50"
+              onClick={stopServer}
+              disabled={wsStatus !== 'connected'}
+            >
+              Stop Server
             </button>
           </Col>
         </Row>
