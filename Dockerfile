@@ -1,4 +1,4 @@
-FROM rust:1.88.0-slim-bookworm AS builder
+FROM rust:1.88.0-slim-bookworm AS builder-back
 
 WORKDIR /app
 
@@ -10,21 +10,31 @@ RUN apt-get update && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY ./Cargo.toml ./Cargo.lock ./
+COPY ./src/ ./src/
 
 RUN cargo build --release --locked
 
-FROM rust:1.88.0-slim-bookworm
-
-RUN apt-get update && \
-  apt-get install -y \
-  libssl-dev && \
-  apt-get clean
+FROM node:22.0-bookworm-slim AS builder-front
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/mineboard ./mineboard
-COPY ./.env ./.env
+COPY ./front .
+
+RUN npm i && npm run build
+
+FROM openjdk:21-rc-jdk-slim-bookworm
+
+RUN apt-get update && \
+  apt-get install -y \
+  libssl-dev \
+  && apt-get clean
+
+WORKDIR /app
+
+COPY --from=builder-back /app/target/release/mineboard /app/mineboard
+COPY --from=builder-front /app/dist /app/front/dist/
+COPY ./server/ /app/server/
 
 RUN chmod +x ./mineboard
 
