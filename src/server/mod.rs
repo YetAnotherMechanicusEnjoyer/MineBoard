@@ -6,10 +6,6 @@ use tokio::process::Command;
 use crate::AppState;
 use crate::messages::BroadcastLog;
 
-const COMMAND: &str = "java";
-const ARGS: &[&str] = &["-jar", "server.jar", "nogui"];
-const PATH: &str = "./server";
-
 async fn handle_output_stream<T>(stream: T, app_state: web::Data<AppState>, is_error: bool)
 where
     T: AsyncRead + Unpin + Send + 'static,
@@ -42,10 +38,10 @@ where
 }
 
 pub async fn start_server(app_state: web::Data<AppState>) -> HttpResponse {
-    let mut command = Command::new(COMMAND);
+    let mut command = Command::new(app_state.config.command.clone());
 
-    command.current_dir(PATH);
-    command.args(ARGS);
+    command.current_dir(app_state.config.server_path.clone());
+    command.args(app_state.config.args.clone());
 
     match command
         .stdout(Stdio::piped())
